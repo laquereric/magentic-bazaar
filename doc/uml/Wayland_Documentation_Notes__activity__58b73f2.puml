@@ -1,0 +1,33 @@
+' Generated at: 2026-01-29 17:31:41
+' Git SHA: 7a6f8947bd62d2dae362b154bb934689fdf0f30c
+' UUID7: 58b73f2
+' UML Type: activity
+
+@startuml
+title Wayland Documentation Notes - Activity Diagram
+
+start
+
+:Receive Input;
+if (Input Valid?) then (yes)
+  :Process Data;
+  fork
+    :Validate Results;
+  fork again
+    :Log Activity;
+  end fork
+  :Generate Output;
+  :Send Response;
+else (no)
+  :Log Error;
+  :Return Error Message;
+endif
+
+stop
+
+note right of "Process Data"
+  Parallel processing
+  with validation
+end note
+
+@enduml

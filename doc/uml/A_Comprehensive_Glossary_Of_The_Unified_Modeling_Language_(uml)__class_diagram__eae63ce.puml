@@ -1,0 +1,35 @@
+' Generated at: 2026-01-29 17:31:41
+' Git SHA: 7a6f8947bd62d2dae362b154bb934689fdf0f30c
+' UUID7: eae63ce
+' UML Type: class_diagram
+
+@startuml
+title A Comprehensive Glossary Of The Unified Modeling Language (uml) - Class Diagram
+
+' Sample classes based on UML concepts
+class System {
+  -name: String
+  -version: String
+  +initialize()
+  +process()
+  +shutdown()
+}
+
+class Component {
+  -id: String
+  -type: String
+  +execute()
+  +validate()
+}
+
+class Interface {
+  <<interface>>
+  +connect()
+  +disconnect()
+}
+
+System "1" *-- "many" Component : composition
+Component ..|> Interface : realization
+Component "1" --> "many" Component : association
+
+@enduml
