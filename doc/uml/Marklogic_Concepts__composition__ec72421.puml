@@ -1,0 +1,48 @@
+' Generated at: 2026-01-29 18:40:36
+' Git SHA: 6037d0763e0532786974a442e4d8e4b353167e57
+' UUID7: ec72421
+' UML Type: composition
+
+@startuml
+title Marklogic Concepts - Composition & Aggregation
+
+class House {
+  -address: String
+  +addRoom()
+  +removeRoom()
+}
+
+class Room {
+  -size: Float
+  -type: String
+  +getSize()
+}
+
+class Department {
+  -name: String
+  +addProfessor()
+}
+
+class Professor {
+  -name: String
+  -specialty: String
+  +teach()
+}
+
+' Composition: strong relationship
+House "1" *-- "many" Room : composition
+
+' Aggregation: weak relationship
+Department "1" o-- "many" Professor : aggregation
+
+note right of House
+  Composition: Room cannot
+  exist without House
+end note
+
+note right of Department
+  Aggregation: Professor can
+  exist independently
+end note
+
+@enduml

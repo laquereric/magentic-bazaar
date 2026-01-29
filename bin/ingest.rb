@@ -39,14 +39,14 @@ end
 def add_uuid7_suffix(filename, uuid7)
   return filename if has_uuid7_suffix?(filename)
 
-  # Remove .md extension, add UUID7, then add back .md
-  filename.sub(/\.md$/, '') + "__#{uuid7}.md"
+  ext = File.extname(filename)
+  filename.sub(/#{Regexp.escape(ext)}$/, '') + "__#{uuid7}#{ext}"
 end
 
 # Function to extract title from filename
 def extract_title(filename)
   # Remove extensions and convert underscores to spaces, capitalize words
-  filename.sub(/\.(md|pdf)$/, '').gsub('_', ' ').split.map(&:capitalize).join(' ')
+  filename.sub(/\.(md|pdf|jpg|jpeg)$/i, '').gsub('_', ' ').split.map(&:capitalize).join(' ')
 end
 
 # Function to extract text from PDF file
@@ -67,6 +67,22 @@ end
 # Function to determine if file is PDF
 def pdf_file?(filename)
   filename.downcase.end_with?('.pdf')
+end
+
+# Function to determine if file is a JPG/JPEG image
+def image_file?(filename)
+  filename.downcase.end_with?('.jpg', '.jpeg')
+end
+
+# Function to extract text from image file using Tesseract OCR
+def extract_text_from_image(image_path)
+  output = `tesseract "#{image_path}" stdout 2>/dev/null`
+  unless $?.success?
+    raise "Tesseract OCR failed for #{image_path}. Is tesseract installed? (brew install tesseract)"
+  end
+  output.gsub(/\f/, '')
+        .gsub(/\s+/, ' ')
+        .strip
 end
 
 # Function to load UML glossary knowledge
@@ -594,7 +610,7 @@ if command == 'undo'
   puts '🔄 Starting ingest undo workflow...'
 
   # Move all files back from ingested to ingest
-  ingested_files = Dir.glob(File.join(INGESTED_DIR, '*.md'))
+  ingested_files = Dir.glob(File.join(INGESTED_DIR, '*.{md,jpg,jpeg}'))
 
   if ingested_files.empty?
     puts "❌ No files found in #{INGESTED_DIR} to restore"
@@ -603,14 +619,15 @@ if command == 'undo'
 
   ingested_files.each do |file|
     filename_with_uuid7 = File.basename(file)
-    original_filename = filename_with_uuid7.sub(/__\w{7}\.md$/, '.md')
+    ext = File.extname(filename_with_uuid7)
+    original_filename = filename_with_uuid7.sub(/__\w{7}#{Regexp.escape(ext)}$/, ext)
     title = extract_title(original_filename)
     title_underscore = title.gsub(' ', '_')
 
     puts "   📤 Restoring: #{filename_with_uuid7}"
 
     # Extract UUID7 from filename for cleanup
-    uuid7_match = filename_with_uuid7.match(/__(\w{7})\.md$/)
+    uuid7_match = filename_with_uuid7.match(/__(\w{7})\.\w+$/)
     uuid7 = uuid7_match ? uuid7_match[1] : nil
 
     # Move original file back to ingest directory (without UUID7 suffix)
@@ -654,20 +671,22 @@ puts '🚀 Starting enhanced ingest workflow...'
 # Get current Git SHA for this run
 git_sha = get_git_sha
 
-# Get all markdown and PDF files in ingest directory
+# Get all markdown, PDF, and image files in ingest directory
 markdown_files = Dir.glob(File.join(INGEST_DIR, '*.md'))
 pdf_files = Dir.glob(File.join(INGEST_DIR, '*.pdf'))
-all_files = markdown_files + pdf_files
+image_files = Dir.glob(File.join(INGEST_DIR, '*.{jpg,jpeg}'))
+all_files = markdown_files + pdf_files + image_files
 
 if all_files.empty?
-  puts "❌ No markdown or PDF files found in #{INGEST_DIR}"
+  puts "❌ No markdown, PDF, or image files found in #{INGEST_DIR}"
   exit 0
 end
 
-# Process each markdown and PDF file
+# Process each file
 all_files.each do |file|
   original_filename = File.basename(file)
   is_pdf = pdf_file?(original_filename)
+  is_image = image_file?(original_filename)
 
   # Check if file already has UUID7 suffix
   if has_uuid7_suffix?(original_filename)
@@ -684,6 +703,10 @@ all_files.each do |file|
       puts "📄 Processing PDF: #{original_filename}"
       content = extract_text_from_pdf(file)
       file_type = 'PDF'
+    elsif is_image
+      puts "🖼️  Processing Image: #{original_filename}"
+      content = extract_text_from_image(file)
+      file_type = 'Image (OCR)'
     else
       puts "📝 Processing Markdown: #{original_filename}"
       content = File.read(file)
@@ -695,7 +718,11 @@ all_files.each do |file|
   end
 
   # Generate output filename with UUID7
-  filename_with_uuid7 = add_uuid7_suffix(original_filename.sub(/\.(md|pdf)$/, '.md'), uuid7)
+  if is_image
+    filename_with_uuid7 = add_uuid7_suffix(original_filename, uuid7)
+  else
+    filename_with_uuid7 = add_uuid7_suffix(original_filename.sub(/\.(md|pdf)$/, '.md'), uuid7)
+  end
 
   puts "   Title: #{title}"
   puts "   Type: #{file_type}"
@@ -705,6 +732,11 @@ all_files.each do |file|
   if is_pdf
     puts "   📊 PDF pages: #{PDF::Reader.new(file).page_count}"
     puts "   📝 Extracted characters: #{content.length}"
+  end
+
+  if is_image
+    puts "   🖼️  Image file: #{original_filename}"
+    puts "   📝 OCR extracted characters: #{content.length}"
   end
 
   # Enhanced document analysis using UML glossary
@@ -880,7 +912,7 @@ puts '📊 Summary:'
 puts "   UML diagrams: #{Dir.glob(File.join(UML_DIR, '*.puml')).count}"
 puts "   Technical summaries: #{Dir.glob(File.join(SKILLS_DIR, '*.md')).count}"
 puts "   Human docs: #{Dir.glob(File.join(HUMAN_DIR, '*.md')).count}"
-puts "   Archived files: #{Dir.glob(File.join(INGESTED_DIR, '*.md')).count}"
+puts "   Archived files: #{Dir.glob(File.join(INGESTED_DIR, '*.{md,jpg,jpeg}')).count}"
 puts ''
 puts '🧠 UML Enhancement:'
 puts "   UML glossary loaded: #{!uml_glossary.empty? ? 'Yes' : 'No'}"
@@ -892,4 +924,4 @@ puts '   ./bin/ingest.rb      - Run forward ingest with UML enhancement'
 puts '   ./bin/ingest.rb undo - Undo ingest (ingested → ingest)'
 puts ''
 puts '🔍 Validation:'
-puts "   Run 'find doc/ -name \"*.md\" -o -name \"*.puml\" | sort' to see all files"
+puts "   Run 'find doc/ -name \"*.md\" -o -name \"*.puml\" -o -name \"*.jpg\" -o -name \"*.jpeg\" | sort' to see all files"
