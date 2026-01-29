@@ -7,6 +7,7 @@
 require 'fileutils'
 require 'digest'
 require 'time'
+require 'pdf-reader'
 
 # Directory setup
 INGEST_DIR = 'doc/ingest'
@@ -44,8 +45,28 @@ end
 
 # Function to extract title from filename
 def extract_title(filename)
-  # Remove .md extension and convert underscores to spaces, capitalize words
-  filename.sub(/\.md$/, '').gsub('_', ' ').split.map(&:capitalize).join(' ')
+  # Remove extensions and convert underscores to spaces, capitalize words
+  filename.sub(/\.(md|pdf)$/, '').gsub('_', ' ').split.map(&:capitalize).join(' ')
+end
+
+# Function to extract text from PDF file
+def extract_text_from_pdf(pdf_path)
+  reader = PDF::Reader.new(pdf_path)
+  text = ''
+
+  reader.pages.each do |page|
+    text += page.text + "\n"
+  end
+
+  # Clean up the extracted text
+  text.gsub(/\f/, '') # Remove form feed characters
+      .gsub(/\s+/, ' ') # Normalize whitespace
+      .strip
+end
+
+# Function to determine if file is PDF
+def pdf_file?(filename)
+  filename.downcase.end_with?('.pdf')
 end
 
 # Function to load UML glossary knowledge
@@ -633,17 +654,20 @@ puts '🚀 Starting enhanced ingest workflow...'
 # Get current Git SHA for this run
 git_sha = get_git_sha
 
-# Get all markdown files in ingest directory
+# Get all markdown and PDF files in ingest directory
 markdown_files = Dir.glob(File.join(INGEST_DIR, '*.md'))
+pdf_files = Dir.glob(File.join(INGEST_DIR, '*.pdf'))
+all_files = markdown_files + pdf_files
 
-if markdown_files.empty?
-  puts "❌ No markdown files found in #{INGEST_DIR}"
+if all_files.empty?
+  puts "❌ No markdown or PDF files found in #{INGEST_DIR}"
   exit 0
 end
 
-# Process each markdown file
-markdown_files.each do |file|
+# Process each markdown and PDF file
+all_files.each do |file|
   original_filename = File.basename(file)
+  is_pdf = pdf_file?(original_filename)
 
   # Check if file already has UUID7 suffix
   if has_uuid7_suffix?(original_filename)
@@ -653,15 +677,35 @@ markdown_files.each do |file|
 
   title = extract_title(original_filename)
   uuid7 = generate_uuid7
-  content = File.read(file)
 
-  # Create new filename with UUID7 suffix
-  filename_with_uuid7 = add_uuid7_suffix(original_filename, uuid7)
+  # Extract content based on file type
+  begin
+    if is_pdf
+      puts "📄 Processing PDF: #{original_filename}"
+      content = extract_text_from_pdf(file)
+      file_type = 'PDF'
+    else
+      puts "📝 Processing Markdown: #{original_filename}"
+      content = File.read(file)
+      file_type = 'Markdown'
+    end
+  rescue => e
+    puts "❌ Error reading #{original_filename}: #{e.message}"
+    next
+  end
 
-  puts "📄 Processing: #{original_filename}"
+  # Generate output filename with UUID7
+  filename_with_uuid7 = add_uuid7_suffix(original_filename.sub(/\.(md|pdf)$/, '.md'), uuid7)
+
   puts "   Title: #{title}"
+  puts "   Type: #{file_type}"
   puts "   UUID7: #{uuid7}"
   puts "   Git SHA: #{git_sha[0, 7]}"
+
+  if is_pdf
+    puts "   📊 PDF pages: #{PDF::Reader.new(file).page_count}"
+    puts "   📝 Extracted characters: #{content.length}"
+  end
 
   # Enhanced document analysis using UML glossary
   uml_analysis = analyze_document_for_uml(content, uml_glossary)
