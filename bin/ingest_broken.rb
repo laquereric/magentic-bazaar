@@ -20,6 +20,25 @@ def generate_uuid7
   Digest::MD5.hexdigest((Time.now.to_f * 1000).to_i.to_s)[0, 7]
 end
 
+# Function to get current Git SHA
+def get_git_sha
+  sha = `git rev-parse HEAD 2>/dev/null`.strip
+  sha.empty? ? 'not_a_git_repo' : sha
+end
+
+# Function to check if file already has UUID7 suffix
+def has_uuid7_suffix?(filename)
+  filename.match(/__\w{7}$/)
+end
+
+# Function to add UUID7 suffix to filename (only if not already present)
+def add_uuid7_suffix(filename, uuid7)
+  return filename if has_uuid7_suffix?(filename)
+
+  # Remove .md extension, add UUID7, then add back .md
+  filename.sub(/\.md$/, '') + "__#{uuid7}.md"
+end
+
 # Function to extract title from filename
 def extract_title(filename)
   # Remove .md extension and convert underscores to spaces, capitalize words
@@ -276,23 +295,48 @@ if command == 'undo'
     exit 0
   end
 
-  ingested_files.each do |file|
-    filename = File.basename(file)
-    title = extract_title(filename)
+ingested_files.each do |file|
+    filename_with_uuid7 = File.basename(file)
+    original_filename = filename_with_uuid7.sub(/__\w{7}\.md$/, '.md')
+    title = extract_title(original_filename)
     title_underscore = title.gsub(' ', '_')
-
-    puts "   📤 Restoring: #{filename}"
-
-    # Move original file back to ingest directory
-    FileUtils.mv(file, File.join(INGEST_DIR, filename))
-    puts "     ✅ Moved: #{filename} -> doc/ingest/"
-
-    # Find and remove associated UML files
-    uml_files = Dir.glob(File.join(UML_DIR, "#{title_underscore}__*__*.puml"))
+    
+    puts "   📤 Restoring: #{filename_with_uuid7}"
+    
+    # Extract UUID7 from filename for cleanup
+    uuid7_match = filename_with_uuid7.match(/__(\w{7})\.md$/)
+    uuid7 = uuid7_match ? uuid7_match[1] : nil
+    
+    # Move original file back to ingest directory (without UUID7 suffix)
+    FileUtils.mv(file, File.join(INGEST_DIR, original_filename))
+    puts "     ✅ Moved: #{filename_with_uuid7} -> #{original_filename}"
+    
+    # Find and remove associated UML files with specific UUID7
+    uml_pattern = uuid7 ? "#{title_underscore}__*__#{uuid7}.puml" : "#{title_underscore}__*__*.puml"
+    uml_files = Dir.glob(File.join(UML_DIR, uml_pattern))
     uml_files.each do |uml_file|
       FileUtils.rm_f(uml_file)
       puts "     🗑️  Removed: #{File.basename(uml_file)} (UML)"
     end
+    
+    # Find and remove associated skill files with specific UUID7
+    skill_pattern = uuid7 ? "#{title_underscore}__#{uuid7}.md" : "#{title_underscore}__*.md"
+    skill_files = Dir.glob(File.join(SKILLS_DIR, skill_pattern))
+    skill_files.each do |skill_file|
+      FileUtils.rm_f(skill_file)
+      puts "     🗑️  Removed: #{File.basename(skill_file)} (Skill)"
+    end
+    
+    # Find and remove associated human documentation files with specific UUID7
+    human_pattern = uuid7 ? "#{title_underscore}__#{uuid7}.md" : "#{title_underscore}__*.md"
+    human_files = Dir.glob(File.join(HUMAN_DIR, human_pattern))
+    human_files.each do |human_file|
+      FileUtils.rm_f(human_file)
+      puts "     🗑️  Removed: #{File.basename(human_file)} (Human)"
+    end
+    
+    puts ""
+  end
 
     # Find and remove associated skill files
     skill_files = Dir.glob(File.join(SKILLS_DIR, "#{title_underscore}__*.md"))
@@ -318,6 +362,9 @@ end
 # Forward ingest workflow
 puts '🚀 Starting ingest workflow...'
 
+# Get current Git SHA for this run
+git_sha = get_git_sha
+
 # Get all markdown files in ingest directory
 markdown_files = Dir.glob(File.join(INGEST_DIR, '*.md'))
 
@@ -328,14 +375,25 @@ end
 
 # Process each markdown file
 markdown_files.each do |file|
-  filename = File.basename(file)
-  title = extract_title(filename)
+  original_filename = File.basename(file)
+
+  # Check if file already has UUID7 suffix
+  if has_uuid7_suffix?(original_filename)
+    puts "⏭️  Skipping: #{original_filename} (already has UUID7 suffix)"
+    next
+  end
+
+  title = extract_title(original_filename)
   uuid7 = generate_uuid7
   content = File.read(file)
 
-  puts "📄 Processing: #{filename}"
+  # Create new filename with UUID7 suffix
+  add_uuid7_suffix(original_filename, uuid7)
+
+  puts "📄 Processing: #{original_filename}"
   puts "   Title: #{title}"
   puts "   UUID7: #{uuid7}"
+  puts "   Git SHA: #{git_sha[0, 7]}"
 
   # Analyze document for intelligent UML generation
   uml_analysis = analyze_document_for_uml(content)
@@ -346,7 +404,10 @@ markdown_files.each do |file|
   uml_file = File.join(UML_DIR, uml_filename)
 
   uml_content = generate_intelligent_uml(content, title, uml_analysis)
-  File.write(uml_file, uml_content)
+
+  # Add Git SHA comment to UML file
+  uml_content_with_sha = "' Generated at: #{Time.now.strftime('%Y-%m-%d %H:%M:%S')}\n' Git SHA: #{git_sha}\n' UUID7: #{uuid7}\n\n#{uml_content}"
+  File.write(uml_file, uml_content_with_sha)
 
   # Extract document insights for skill format
   insights = extract_document_insights(content, title)
@@ -362,9 +423,10 @@ markdown_files.each do |file|
     - **Name:** #{insights[:title]}
     - **Description:** Technical summary and analysis of #{insights[:title].downcase}
     - **Version:** 1.0.0
-    - **Source:** #{filename}
+    - **Source:** #{original_filename}
     - **Processed:** #{Time.now.strftime('%Y-%m-%d %H:%M:%S')}
     - **UUID7:** #{uuid7}
+    - **Git SHA:** #{git_sha}
     - **Category:** Documentation Analysis
     - **Tags:** #{insights[:technical_terms].take(5).join(', ')}
 
@@ -427,8 +489,10 @@ markdown_files.each do |file|
 
     ## Document Overview
 
-    **Source:** #{filename}#{'  '}
+    **Source:** #{original_filename}#{'  '}
     **Processed:** #{Time.now.strftime('%Y-%m-%d %H:%M:%S')}#{'  '}
+    **Git SHA:** #{git_sha}#{'  '}
+    **UUID7:** #{uuid7}#{'  '}
     **Word Count:** #{insights[:word_count]} words#{'  '}
     **Main Sections:** #{insights[:sections].join(', ')}#{'  '}
 
@@ -464,9 +528,10 @@ markdown_files.each do |file|
   puts "   ✅ Created: #{skills_filename} (Anthropic Skill)"
   puts "   ✅ Created: #{human_filename} (Enhanced)"
 
-  # Move original file to ingested directory
-  FileUtils.mv(file, File.join(INGESTED_DIR, filename))
-  puts "   📦 Archived: #{filename} -> doc/ingested/"
+  # Move original file to ingested directory with UUID7 suffix
+  target_file = File.join(INGESTED_DIR, filename_with_uuid7)
+  FileUtils.mv(file, target_file)
+  puts "   📦 Archived: #{original_filename} -> #{filename_with_uuid7}"
   puts ''
 end
 
