@@ -1,0 +1,19 @@
+@startuml
+title 7 Claude Prod Hook - User Journey
+
+actor User as user
+participant "OpenCode" as system
+database "GitHub" as github
+
+user -> system: Initialize request
+system -> user: Present analysis plan
+user -> system: Approve plan
+system -> github: Fetch repository data
+system -> system: Analyze codebase
+system -> user: Show proposed changes
+user -> system: Apply modifications
+system -> github: Create pull request
+github -> user: Notification of PR
+user -> github: Review and merge
+
+@enduml

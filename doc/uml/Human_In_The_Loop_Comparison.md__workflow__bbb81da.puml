@@ -1,0 +1,15 @@
+@startuml
+title Human In The Loop Comparison.md - Workflow Process
+
+participant "Input" as input
+participant "Process" as process
+participant "Validation" as validate
+participant "Output" as output
+
+input -> process: Submit document
+process -> validate: Check quality
+validate --> process: Valid document
+process -> output: Generate artifacts
+output -> process: Confirm completion
+
+@enduml
