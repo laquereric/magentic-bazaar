@@ -609,7 +609,7 @@ puts "📚 Loaded UML Glossary with #{uml_glossary.keys.length} sections" unless
 if command == 'undo'
   puts '🔄 Starting ingest undo workflow...'
 
-  # Move all files back from ingested to ingest
+  # Find ingested files and move them back, removing artifacts
   ingested_files = Dir.glob(File.join(INGESTED_DIR, '*.{md,jpg,jpeg}'))
 
   if ingested_files.empty?
@@ -630,9 +630,9 @@ if command == 'undo'
     uuid7_match = filename_with_uuid7.match(/__(\w{7})\.\w+$/)
     uuid7 = uuid7_match ? uuid7_match[1] : nil
 
-    # Move original file back to ingest directory (without UUID7 suffix)
-    FileUtils.mv(file, File.join(INGEST_DIR, original_filename))
-    puts "     ✅ Moved: #{filename_with_uuid7} -> #{original_filename}"
+    # Move file back to ingest directory, keeping UUID name
+    FileUtils.mv(file, File.join(INGEST_DIR, filename_with_uuid7))
+    puts "     ✅ Moved: ingested/#{filename_with_uuid7} -> ingest/#{filename_with_uuid7}"
 
     # Find and remove associated UML files with specific UUID7
     uml_pattern = uuid7 ? "#{title_underscore}__*__#{uuid7}.puml" : "#{title_underscore}__*__*.puml"
@@ -661,7 +661,7 @@ if command == 'undo'
     puts ''
   end
 
-  puts '✅ Undo complete! All files and associated artifacts cleaned up'
+  puts '✅ Undo complete! Files restored to ingest, artifacts removed'
   exit 0
 end
 
@@ -717,12 +717,8 @@ all_files.each do |file|
     next
   end
 
-  # Generate output filename with UUID7
-  if is_image
-    filename_with_uuid7 = add_uuid7_suffix(original_filename, uuid7)
-  else
-    filename_with_uuid7 = add_uuid7_suffix(original_filename.sub(/\.(md|pdf)$/, '.md'), uuid7)
-  end
+  # Generate output filename with UUID7 (preserve original extension)
+  filename_with_uuid7 = add_uuid7_suffix(original_filename, uuid7)
 
   puts "   Title: #{title}"
   puts "   Type: #{file_type}"
@@ -899,10 +895,10 @@ all_files.each do |file|
   puts "   ✅ Created: #{skills_filename} (Enhanced Anthropic Skill)"
   puts "   ✅ Created: #{human_filename} (Enhanced with UML context)"
 
-  # Move original file to ingested directory with UUID7 suffix
+  # Rename with UUID7 suffix and move to ingested directory
   target_file = File.join(INGESTED_DIR, filename_with_uuid7)
   FileUtils.mv(file, target_file)
-  puts "   📦 Archived: #{original_filename} -> #{filename_with_uuid7}"
+  puts "   📦 Ingested: #{original_filename} -> ingested/#{filename_with_uuid7}"
   puts ''
 end
 
@@ -912,7 +908,7 @@ puts '📊 Summary:'
 puts "   UML diagrams: #{Dir.glob(File.join(UML_DIR, '*.puml')).count}"
 puts "   Technical summaries: #{Dir.glob(File.join(SKILLS_DIR, '*.md')).count}"
 puts "   Human docs: #{Dir.glob(File.join(HUMAN_DIR, '*.md')).count}"
-puts "   Archived files: #{Dir.glob(File.join(INGESTED_DIR, '*.{md,jpg,jpeg}')).count}"
+puts "   Ingested files: #{Dir.glob(File.join(INGESTED_DIR, '*.{md,jpg,jpeg}')).count}"
 puts ''
 puts '🧠 UML Enhancement:'
 puts "   UML glossary loaded: #{!uml_glossary.empty? ? 'Yes' : 'No'}"
