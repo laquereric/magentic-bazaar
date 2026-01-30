@@ -1,0 +1,25 @@
+' Generated at: 2026-01-30 05:22:23
+' Git SHA: a1e3cd6a168ef4053064feb0d008d9776799fd73
+' UUID7: ceffff1
+' UML Type: conceptual
+
+@startuml
+title Aistrategymap - Conceptual Overview
+
+participant "Source" as source
+participant "Process" as process
+participant "Analysis" as analysis
+participant "Output" as output
+
+source -> process: Input document
+process -> analysis: Extract content
+analysis -> analysis: Generate insights
+analysis -> output: Create deliverables
+output -> source: Feedback loop
+
+note over source,output
+  High-level workflow visualization
+  based on document analysis
+end note
+
+@enduml

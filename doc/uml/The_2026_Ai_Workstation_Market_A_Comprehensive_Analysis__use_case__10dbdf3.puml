@@ -1,0 +1,30 @@
+' Generated at: 2026-01-30 05:22:19
+' Git SHA: a1e3cd6a168ef4053064feb0d008d9776799fd73
+' UUID7: 10dbdf3
+' UML Type: use_case
+
+@startuml
+title The 2026 Ai Workstation Market A Comprehensive Analysis - Use Case Diagram
+
+actor User
+actor Administrator
+actor System
+
+rectangle "System Boundary" {
+  User -- (Login)
+  User -- (Browse Content)
+  User -- (Search)
+  Administrator -- (Manage Users)
+  Administrator -- (Configure System)
+  System -- (Process Data)
+  System -- (Generate Reports)
+}
+
+User .> Administrator : inheritance
+
+note right of User
+  Primary actor
+  interacts with system
+end note
+
+@enduml

@@ -1,0 +1,48 @@
+' Generated at: 2026-01-30 05:22:20
+' Git SHA: a1e3cd6a168ef4053064feb0d008d9776799fd73
+' UUID7: 9edf07e
+' UML Type: composition
+
+@startuml
+title Magenticmarket Business Model - Composition & Aggregation
+
+class House {
+  -address: String
+  +addRoom()
+  +removeRoom()
+}
+
+class Room {
+  -size: Float
+  -type: String
+  +getSize()
+}
+
+class Department {
+  -name: String
+  +addProfessor()
+}
+
+class Professor {
+  -name: String
+  -specialty: String
+  +teach()
+}
+
+' Composition: strong relationship
+House "1" *-- "many" Room : composition
+
+' Aggregation: weak relationship
+Department "1" o-- "many" Professor : aggregation
+
+note right of House
+  Composition: Room cannot
+  exist without House
+end note
+
+note right of Department
+  Aggregation: Professor can
+  exist independently
+end note
+
+@enduml

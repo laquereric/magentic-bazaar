@@ -2,4 +2,6 @@
 
 source "https://rubygems.org"
 
-# gem "rails"
+gemspec
+
+gem "rails-multistore", git: "https://github.com/laquereric/rails-multistore.git"
