@@ -11,6 +11,8 @@ module MagenticBazaar
     has_one :uml_diagram, class_name: "MagenticBazaar::UmlDiagram", dependent: :destroy
     has_many :mcp_servers, class_name: "MagenticBazaar::McpServer", dependent: :nullify
     has_many :mcp_providers, class_name: "MagenticBazaar::McpProvider", dependent: :nullify
+    has_many :skill_servers, class_name: "MagenticBazaar::SkillServer", dependent: :nullify
+    has_many :skill_providers, class_name: "MagenticBazaar::SkillProvider", dependent: :nullify
 
     validates :title, presence: true
     validates :original_filename, presence: true

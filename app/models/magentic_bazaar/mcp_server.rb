@@ -7,6 +7,7 @@ module MagenticBazaar
     include RailsMultistore::Model
 
     belongs_to :document, class_name: "MagenticBazaar::Document", optional: true
+    has_many :skill_servers, class_name: "MagenticBazaar::SkillServer", dependent: :nullify
 
     validates :name, presence: true
 

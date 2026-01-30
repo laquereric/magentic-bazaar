@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
 module MagenticBazaar
-  class McpProvider < ActiveRecord::Base
-    self.table_name = "magentic_bazaar_mcp_providers"
+  class SkillProvider < ActiveRecord::Base
+    self.table_name = "magentic_bazaar_skill_providers"
 
     include RailsMultistore::Model
 
     belongs_to :document, class_name: "MagenticBazaar::Document", optional: true
-    has_many :skill_providers, class_name: "MagenticBazaar::SkillProvider", dependent: :nullify
+    belongs_to :mcp_provider, class_name: "MagenticBazaar::McpProvider", optional: true
 
     validates :name, presence: true
 
