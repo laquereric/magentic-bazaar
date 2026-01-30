@@ -13,7 +13,8 @@ module MagenticBazaar
                   :queue_name,
                   :multistore_enabled,
                   :multistore_stores,
-                  :error_handler
+                  :error_handler,
+                  :output_format
 
     def initialize
       @ingest_dir         = "doc/ingest"
@@ -27,9 +28,14 @@ module MagenticBazaar
       @queue_name         = :magentic_bazaar
       @multistore_enabled = true
       @multistore_stores  = []
+      @output_format      = :mdx
       @error_handler      = ->(error, context) {
         Rails.logger.error("[MagenticBazaar] #{context}: #{error.message}")
       }
+    end
+
+    def output_extension
+      output_format == :mdx ? ".mdx" : ".md"
     end
   end
 end

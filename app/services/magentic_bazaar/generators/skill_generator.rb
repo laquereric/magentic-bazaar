@@ -4,6 +4,98 @@ module MagenticBazaar
   module Generators
     class SkillGenerator
       def generate(document:, insights:, uml_analysis:, uml_filename:)
+        config = MagenticBazaar.configuration
+        output_format = config&.output_format || :mdx
+
+        if output_format == :mdx
+          generate_mdx(document: document, insights: insights,
+                       uml_analysis: uml_analysis, uml_filename: uml_filename)
+        else
+          generate_md(document: document, insights: insights,
+                      uml_analysis: uml_analysis, uml_filename: uml_filename)
+        end
+      end
+
+      private
+
+      def generate_mdx(document:, insights:, uml_analysis:, uml_filename:)
+        uml_dir = MagenticBazaar.configuration&.uml_dir || "doc/uml"
+        human_dir = MagenticBazaar.configuration&.human_dir || "doc/human"
+        ext = MagenticBazaar.configuration&.output_extension || ".mdx"
+        human_filename = "#{insights[:title].gsub(' ', '_')}__#{document.uuid7}#{ext}"
+
+        <<~SKILL
+          ---
+          title: "#{insights[:title]}"
+          uuid7: "#{document.uuid7}"
+          git_sha: "#{document.git_sha}"
+          category: "Documentation Analysis"
+          uml_type: "#{uml_analysis[:type]}"
+          version: "1.0.0"
+          tags: #{insights[:technical_terms].take(5).to_json}
+          ---
+
+          # #{insights[:title]} - Anthropic Skill (UML Enhanced)
+
+          <Callout type="info">
+          This skill has been generated with UML glossary integration, classified as **#{uml_analysis[:type]}** (#{uml_analysis[:subtype]} subtype).
+          </Callout>
+
+          ## Content Analysis
+
+          <CollapsibleSection title="Document Statistics">
+
+          - **Word Count:** #{insights[:word_count]}
+          - **Sections:** #{insights[:sections].length}
+          - **Key Points:** #{insights[:key_points].length}
+          - **Contains Code:** #{insights[:has_code] ? 'Yes' : 'No'}
+          - **Contains Diagrams:** #{insights[:has_diagrams] ? 'Yes' : 'No'}
+
+          </CollapsibleSection>
+
+          ### Main Sections
+          #{insights[:sections].map { |section| "- **#{section}**" }.join("\n")}
+
+          ### Technical Concepts
+          #{insights[:technical_terms].map { |term| "- #{term}" }.join("\n")}
+
+          ### Key Insights
+          #{insights[:key_points].take(10).map { |point| "- #{point}" }.join("\n")}
+
+          ## UML Analysis (Enhanced with Glossary)
+
+          ### Diagram Classification
+          - **Type:** #{uml_analysis[:type]}
+          - **Title:** #{uml_analysis[:title]}
+          - **Subtype:** #{uml_analysis[:subtype]}
+          - **Analysis Method:** UML Glossary Integration
+
+          <CollapsibleSection title="UML Knowledge Applied">
+
+          This analysis leverages the comprehensive UML glossary containing:
+          - Core UML concepts (Class, Object, Interface, Component)
+          - UML relationships (Inheritance, Composition, Aggregation)
+          - Structural diagrams (Class, Component, Deployment)
+          - Behavioral diagrams (Use Case, Sequence, Activity)
+
+          </CollapsibleSection>
+
+          ### Generated Artifacts
+          - **UML Diagram:** [#{uml_filename}](#{uml_dir}/#{uml_filename})
+          - **Human Documentation:** [#{human_filename}](#{human_dir}/#{human_filename})
+
+          ## Usage Recommendations
+
+          This skill is optimized for:
+          - AI system consumption and analysis
+          - Technical documentation processing with UML context
+          - Cross-reference linking with UML diagrams
+          - Enhanced diagram classification using UML standards
+          - Automated workflow integration with UML knowledge base
+        SKILL
+      end
+
+      def generate_md(document:, insights:, uml_analysis:, uml_filename:)
         uml_dir = MagenticBazaar.configuration&.uml_dir || "doc/uml"
         human_dir = MagenticBazaar.configuration&.human_dir || "doc/human"
         glossary_file = MagenticBazaar.configuration&.skills_path ?
