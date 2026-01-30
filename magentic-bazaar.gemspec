@@ -6,7 +6,7 @@ Gem::Specification.new do |spec|
   spec.name        = "magentic-bazaar"
   spec.version     = MagenticBazaar::VERSION
   spec.authors     = ["Eric Laquer"]
-  spec.email       = ["eric@laquer.com"]
+  spec.email       = ["laquereric@gmail.com"]
   spec.homepage    = "https://github.com/laquereric/magentic-bazaar"
   spec.summary     = "Document ingestion pipeline as a Rails engine"
   spec.description = "Transforms source documentation into UML diagrams, " \
