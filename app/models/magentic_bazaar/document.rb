@@ -9,6 +9,8 @@ module MagenticBazaar
     belongs_to :ingestion, class_name: "MagenticBazaar::Ingestion", optional: true
     has_one :skill, class_name: "MagenticBazaar::Skill", dependent: :destroy
     has_one :uml_diagram, class_name: "MagenticBazaar::UmlDiagram", dependent: :destroy
+    has_many :mcp_servers, class_name: "MagenticBazaar::McpServer", dependent: :nullify
+    has_many :mcp_providers, class_name: "MagenticBazaar::McpProvider", dependent: :nullify
 
     validates :title, presence: true
     validates :original_filename, presence: true

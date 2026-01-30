@@ -16,7 +16,7 @@ module MagenticBazaar
         next if stores_config.empty?
 
         ActiveSupport.on_load(:active_record) do
-          [MagenticBazaar::Document, MagenticBazaar::Skill, MagenticBazaar::UmlDiagram].each do |klass|
+          [MagenticBazaar::Document, MagenticBazaar::Skill, MagenticBazaar::UmlDiagram, MagenticBazaar::McpServer, MagenticBazaar::McpProvider].each do |klass|
             klass.multistore_registry = RailsMultistore::StoreRegistry.new
             stores_config.each do |store_cfg|
               klass.multistore_registry.store(store_cfg[:name], store_cfg)
