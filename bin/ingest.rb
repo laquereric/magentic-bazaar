@@ -689,14 +689,17 @@ all_files.each do |file|
   is_pdf = pdf_file?(original_filename)
   is_image = image_file?(original_filename)
 
-  # Check if file already has UUID7 suffix
+  # Reuse existing UUID7 if present, otherwise generate a new one
   if has_uuid7_suffix?(original_filename)
-    puts "⏭️  Skipping: #{original_filename} (already has UUID7 suffix)"
-    next
+    existing_match = original_filename.sub(/\.\w+$/, '').match(/__(\w{7})$/)
+    uuid7 = existing_match[1]
+    # Strip UUID from filename to get the original name for title extraction
+    base_filename = original_filename.sub(/__\w{7}(\.\w+)$/, '\1')
+    title = extract_title(base_filename)
+  else
+    uuid7 = generate_uuid7
+    title = extract_title(original_filename)
   end
-
-  title = extract_title(original_filename)
-  uuid7 = generate_uuid7
 
   # Extract content based on file type
   begin
