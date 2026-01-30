@@ -28,6 +28,7 @@ module MagenticBazaar
         ingestion.increment!(:documents_processed)
       end
 
+      cleanup_empty_dirs
       ingestion.complete!
       ingestion
     rescue StandardError => e
@@ -43,8 +44,14 @@ module MagenticBazaar
       end
     end
 
+    def cleanup_empty_dirs
+      Dir.glob(File.join(config.ingest_dir, "**/*/")).sort.reverse_each do |dir|
+        FileUtils.rmdir(dir) if Dir.empty?(dir)
+      end
+    end
+
     def discover_files
-      Dir.glob(File.join(config.ingest_dir, "*.{md,pdf,jpg,jpeg,html}"))
+      Dir.glob(File.join(config.ingest_dir, "**/*.{md,pdf,jpg,jpeg,png,html,puml}"))
     end
 
     def process_file(file_path)
@@ -149,9 +156,12 @@ module MagenticBazaar
         File.write(extracted_path, "# #{title} (Extracted Text)\n\n#{content}")
       end
 
-      # Archive original
+      # Archive original, preserving folder structure
+      relative_dir = File.dirname(file_path).delete_prefix(config.ingest_dir).delete_prefix("/")
       filename_with_uuid7 = add_uuid7_suffix(filename, uuid7)
-      archived_path = File.join(config.ingested_dir, filename_with_uuid7)
+      archive_dir = relative_dir.empty? ? config.ingested_dir : File.join(config.ingested_dir, relative_dir)
+      FileUtils.mkdir_p(archive_dir)
+      archived_path = File.join(archive_dir, filename_with_uuid7)
       FileUtils.mv(file_path, archived_path)
 
       document.update!(archived_path: archived_path, status: "ingested")
@@ -176,7 +186,7 @@ module MagenticBazaar
     end
 
     def extract_title(filename)
-      filename.sub(/\.(md|pdf|jpg|jpeg|html)$/i, "").gsub("_", " ").split.map(&:capitalize).join(" ")
+      filename.sub(/\.(md|pdf|jpg|jpeg|png|html|puml)$/i, "").gsub("_", " ").split.map(&:capitalize).join(" ")
     end
 
     def determine_file_type(filename)
@@ -184,6 +194,7 @@ module MagenticBazaar
       when /\.pdf$/   then "PDF"
       when /\.html$/  then "HTML"
       when /\.jpe?g$/ then "Image (OCR)"
+      when /\.png$/   then "Image (OCR)"
       else                 "Markdown"
       end
     end
@@ -198,7 +209,7 @@ module MagenticBazaar
     end
 
     def image_file?(filename)
-      filename.downcase.end_with?(".jpg", ".jpeg")
+      filename.downcase.end_with?(".jpg", ".jpeg", ".png")
     end
   end
 end

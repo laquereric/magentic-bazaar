@@ -2,7 +2,7 @@
 
 require "magentic_bazaar/version"
 require "magentic_bazaar/configuration"
-require "magentic_bazaar/engine"
+require "magentic_bazaar/engine" if defined?(Rails::Engine)
 
 module MagenticBazaar
   class << self
