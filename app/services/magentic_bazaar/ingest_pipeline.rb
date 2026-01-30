@@ -44,7 +44,7 @@ module MagenticBazaar
     end
 
     def discover_files
-      Dir.glob(File.join(config.ingest_dir, "*.{md,pdf,jpg,jpeg}"))
+      Dir.glob(File.join(config.ingest_dir, "*.{md,pdf,jpg,jpeg,html}"))
     end
 
     def process_file(file_path)
@@ -176,12 +176,13 @@ module MagenticBazaar
     end
 
     def extract_title(filename)
-      filename.sub(/\.(md|pdf|jpg|jpeg)$/i, "").gsub("_", " ").split.map(&:capitalize).join(" ")
+      filename.sub(/\.(md|pdf|jpg|jpeg|html)$/i, "").gsub("_", " ").split.map(&:capitalize).join(" ")
     end
 
     def determine_file_type(filename)
       case filename.downcase
       when /\.pdf$/   then "PDF"
+      when /\.html$/  then "HTML"
       when /\.jpe?g$/ then "Image (OCR)"
       else                 "Markdown"
       end
@@ -189,7 +190,8 @@ module MagenticBazaar
 
     def extractor_for(file_type)
       case file_type
-      when "PDF"        then Extractors::PdfExtractor.new
+      when "PDF"         then Extractors::PdfExtractor.new
+      when "HTML"        then Extractors::HtmlExtractor.new
       when "Image (OCR)" then Extractors::ImageExtractor.new
       else                    Extractors::MarkdownExtractor.new
       end
