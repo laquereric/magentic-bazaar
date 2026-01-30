@@ -1,5 +1,3 @@
 .DS_Store
 
-# Ingested document content (generated at runtime)
-doc/**/*
-!doc/**/.gitkeep
+doc/
