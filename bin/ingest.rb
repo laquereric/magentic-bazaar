@@ -30,9 +30,10 @@ def get_git_sha
   sha.empty? ? 'not_a_git_repo' : sha
 end
 
-# Function to check if file already has UUID7 suffix
+# Function to check if file already has UUID7 suffix (strips extension first)
 def has_uuid7_suffix?(filename)
-  filename.match(/__\w{7}$/)
+  basename_no_ext = filename.sub(/\.\w+$/, '')
+  basename_no_ext.match(/__\w{7}$/)
 end
 
 # Function to add UUID7 suffix to filename (only if not already present)
@@ -717,6 +718,9 @@ all_files.each do |file|
     next
   end
 
+  # Ensure valid UTF-8 for downstream processing
+  content = content.encode('UTF-8', invalid: :replace, undef: :replace)
+
   # Generate output filename with UUID7 (preserve original extension)
   filename_with_uuid7 = add_uuid7_suffix(original_filename, uuid7)
 
@@ -882,7 +886,7 @@ all_files.each do |file|
     - Improved visualization based on UML standards
     - Better context for technical documentation
 
-    ## Original Content
+    #{is_image ? "## Original Image\n\n    ![#{title}](../ingested/#{filename_with_uuid7})\n\n    ## OCR Extracted Text" : "## Original Content"}
 
     ---
 
