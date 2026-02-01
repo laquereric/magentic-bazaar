@@ -30,7 +30,6 @@ Gem::Specification.new do |spec|
   spec.add_dependency "rails", ">= 7.0"
   spec.add_dependency "activejob", ">= 7.0"
   spec.add_dependency "activerecord", ">= 7.0"
-  spec.add_dependency "rails-multistore", "~> 0.1"
   spec.add_dependency "pdf-reader", "~> 2.0"
   spec.add_dependency "nokogiri", "~> 1.16"
 

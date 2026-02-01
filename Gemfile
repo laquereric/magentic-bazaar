@@ -1,7 +1,6 @@
-# frozen_string_literal: true
+gem "swarm-gem", git: "https://github.com/laquereric/swarm-gem.git"
 
 source "https://rubygems.org"
 
 gemspec
 
-gem "rails-multistore", git: "https://github.com/laquereric/rails-multistore.git", ref: "24129f592bf064f2b398323e1f53082aa1ed62c7"
